@@ -19,9 +19,11 @@ public class OAuth2PrincipalUserService extends DefaultOAuth2UserService {
         OAuth2User oAuth2User = super.loadUser(userRequest);
         // 사용자 정보를 파싱한 엑세스 토큰을 가져옴
         Map<String, Object> attributes = oAuth2User.getAttributes();
+//        System.out.println(attributes);
         // OAuth2 의 사용자 정보를 가져옴
         String provider = userRequest.getClientRegistration().getRegistrationId();
         // 공급처 가져옴
+        System.out.println("provider : " + provider);
         String email = null;
         String id = null;
         // 스위치 문으로 이메일을 가져옴
@@ -41,10 +43,10 @@ public class OAuth2PrincipalUserService extends DefaultOAuth2UserService {
                 id = attributes.get("id").toString();
                 Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
                 // 반환값이 맵 형태로 감싸져있어서 뽑아와야함
-                email = (String) kakaoAccount.get("email");
+//                email = (String) kakaoAccount.get("email");
+                email = "example@naver.com";
                 break;
         }
-
         Map<String, Object> newAttributes = Map.of(
                 "id", id,
                 "provider",provider,

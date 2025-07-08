@@ -14,7 +14,7 @@
         <result property="roleId" column="urt_role_id"/>
         <result property="createDt" column="create_dt"/>
         <result property="updateDt" column="update_dt"/>
-        <association property="UserResultMap" resultMap="RoleResultMap"/>
+        <association property="role" resultMap="RoleResultMap"/>
     </resultMap>
 
     <insert id="addUserRole" useGeneratedKeys="true" keyProperty="userRoleId">

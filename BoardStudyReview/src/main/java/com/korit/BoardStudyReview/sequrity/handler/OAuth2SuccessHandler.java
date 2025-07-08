@@ -20,7 +20,8 @@ import java.util.Optional;
 
 @Component
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
-    // 인증객체가 만들어진 다음에 어떻게 처리할지 여기서 구성
+    // 인증객체가 만들어진 다음에 어떻게 처리할지 여기서 구성]
+
 
     @Autowired
     private OAuth2UserRepository oAuth2UserRepository;
@@ -58,9 +59,8 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         if (optionalUser.isPresent()) { // 존재한다면
             accessToken = jwtUtils.generateAccessToken(optionalUser.get().getUserId().toString());
         }
-
         // 다시 클라이언트 페이지로 보냄
-        response.sendRedirect("http://localhost:3000/auth/oauth2/signin?accessToken" + accessToken);
+        response.sendRedirect("http://localhost:3000/auth/oauth2/signin?accessToken=" + accessToken);
 
     }
 }

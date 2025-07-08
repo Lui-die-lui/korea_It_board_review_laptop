@@ -31,7 +31,7 @@ public class JwtAuthenticationFilter implements Filter { // jakarta 필터
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         List<String> methods = List.of("POST", "GET", "PUT", "PATCH", "DELETE");
-        if (methods.contains(request.getMethod())) { // methods 가 포함하고있지 않으면
+        if (!methods.contains(request.getMethod())) { // methods 가 포함하고있지 않으면
             filterChain.doFilter(servletRequest, servletResponse);
             return;
         }
