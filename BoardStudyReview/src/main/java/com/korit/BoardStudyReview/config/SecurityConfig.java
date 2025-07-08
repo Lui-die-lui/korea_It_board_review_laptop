@@ -1,6 +1,8 @@
 package com.korit.BoardStudyReview.config;
 
 import com.korit.BoardStudyReview.sequrity.filter.JwtAuthenticationFilter;
+import com.korit.BoardStudyReview.sequrity.handler.OAuth2SuccessHandler;
+import com.korit.BoardStudyReview.service.OAuth2PrincipalUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,10 +22,18 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    @Autowired
+    private OAuth2PrincipalUserService oAuth2PrincipalUserService;
+
+    @Autowired
+    private OAuth2SuccessHandler oAuth2SuccessHandler;
+
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder() {
         return new BCryptPasswordEncoder(); // Bean 등록된 bCrypt - 어디서든 불러와서 사용 가능
     }
+
+
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -52,9 +62,14 @@ public class SecurityConfig {
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         // UsernamePasswordAuthnticationFilter 앞에 직접 커스텀한 필터 끼워넣음
         http.authorizeHttpRequests(auth -> {
-            auth.requestMatchers("/auth/**").permitAll(); // requestMatchers 는 인증없이 넘어감
+            auth.requestMatchers("/auth/**","/oauth2/**","/login/oauth2/**").permitAll(); // requestMatchers 는 인증없이 넘어감
             auth.anyRequest().authenticated(); // 나머지 request는 전부 인증 거쳐야함
         });
+
+        http.oauth2Login(oauth2 -> oauth2
+                .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2PrincipalUserService))
+                .successHandler(oAuth2SuccessHandler)
+        );
 
         return http.build();
     }
