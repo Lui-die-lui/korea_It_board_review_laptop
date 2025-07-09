@@ -2,10 +2,13 @@ package com.korit.BoardStudyReview.service;
 
 import com.korit.BoardStudyReview.dto.ApiRespDto;
 import com.korit.BoardStudyReview.dto.OAuth2.OAuth2MergeReqDto;
+import com.korit.BoardStudyReview.dto.OAuth2.OAuth2SignupReqDto;
 import com.korit.BoardStudyReview.entity.OAuth2User;
 import com.korit.BoardStudyReview.entity.User;
+import com.korit.BoardStudyReview.entity.UserRole;
 import com.korit.BoardStudyReview.repositroy.OAuth2UserRepository;
 import com.korit.BoardStudyReview.repositroy.UserRepository;
+import com.korit.BoardStudyReview.repositroy.UserRoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,6 +24,9 @@ public class OAuth2AuthService {
 
     @Autowired
     private OAuth2UserRepository oAuth2UserRepository;
+
+    @Autowired
+    private UserRoleRepository userRoleRepository;
 
     @Autowired
     private BCryptPasswordEncoder bCryptPasswordEncoder;
@@ -58,7 +64,60 @@ public class OAuth2AuthService {
         } catch (Exception e) {
             return new ApiRespDto<>("failed", "계정 연동 중 오류가 발생했습니다. : " + e.getMessage(), null);
         }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public ApiRespDto<?> signup(OAuth2SignupReqDto oAuth2SignupReqDto) {
+        Optional<User> userByUsername = userRepository.getUserByUsername(oAuth2SignupReqDto.getUsername());
+        // 이미 존재하는 아이디(username) 인지 먼저 확인
+        if (userByUsername.isPresent()) { // 이미 username이 존재한다면,
+            return new ApiRespDto<>("failed","이미 존재하는 아이디 입니다.",null);
+        }
+
+        Optional<User> userByEmail = userRepository.getUserByEmail(oAuth2SignupReqDto.getEmail());
+        // 이미 존재하는 이메일인지 확인
+        if (userByEmail.isPresent()) {
+            return new ApiRespDto<>("failed","이미 존재하는 이메일입니다.",null);
+        }
 
 
+        Optional<OAuth2User> optionalOAuth2User = oAuth2UserRepository
+                .getOAuth2UserByProviderAndProviderUserId(oAuth2SignupReqDto.getProvider(), oAuth2SignupReqDto.getProviderUserId());
+        // 이미 연동되어있으면
+        if (optionalOAuth2User.isPresent()) {
+            return new ApiRespDto<>("failed","이 계정은 이미 소셜 계정과 연동되어 있습니다.",null);
+        }
+
+        try {
+            Optional<User> optionalUser = userRepository.addUser(oAuth2SignupReqDto.toEntity(bCryptPasswordEncoder));
+            // 소셜계정으로 가입 시도하는 유저정보(password는 암호화 시켜야함)를 DB에 추가 시도(addUser)
+            if (optionalUser.isEmpty()) {
+                throw new RuntimeException("회원 정보 추가에 실패했습니다.");
+            }
+
+            User user = optionalUser.get();
+
+            UserRole userRole = UserRole.builder()
+                    .userId(user.getUserId()) // 추가하고 난 다음 key가 여기 있을것임
+                    .roleId(3) // 임시 사용자
+                    .build();
+
+            // 위 결과가 아래 변수로 들어감
+            int addUserRoleResult = userRoleRepository.addUserRole(userRole);
+            if (addUserRoleResult != 1) {
+                throw new RuntimeException("권한 정보 추가에 실패했습니다.");
+            }
+
+            int oauth2InsertResult = oAuth2UserRepository.addOAuth2User(oAuth2SignupReqDto.toOAuth2User(user.getUserId()));
+            // 받아온 user값을 dto에 넣어주고, repository 내에서 int값이 나오도록 해줌 - 그걸 받아옴
+            if (oauth2InsertResult != 1) {
+                throw new RuntimeException("OAuth2 사용자 정보 추가에 실패했습니다.");
+            }
+
+            return new ApiRespDto<>("success" , "정상적으로 회원가입이 완료되었습니다.",user);
+            // 추가된 유저 객체를 반환시켜줌
+        } catch (Exception e) {
+            return new ApiRespDto<>("failed","회원가입 중 오류가 발생했습니다 : " + e.getMessage(), null);
+        }
     }
 }

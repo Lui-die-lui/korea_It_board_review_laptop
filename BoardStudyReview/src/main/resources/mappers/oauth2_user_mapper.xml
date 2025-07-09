@@ -17,6 +17,6 @@
     insert into
       oauth2_user_tb
     values
-      (0, #{userId}, #{provider}, #{providerUerId}, now(), null)
+      (0, #{userId}, #{provider}, #{providerUserId}, now(), null)
   </insert>
 </mapper>
