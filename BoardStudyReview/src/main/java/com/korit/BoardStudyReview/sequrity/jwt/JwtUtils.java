@@ -29,6 +29,17 @@ public class JwtUtils {
                 .compact();
     }
 
+    public String generateVerifyToken(String id) {
+        // 메일 인증용(임시 사용자 -> 일반 사용자) 토큰
+        return Jwts.builder()
+                .subject("VerifyToken")
+                .id(id)
+                .expiration(new Date(new Date().getTime() + (1000L * 60L * 3L)))
+                // 1초 * 60 * 3 = 3분
+                .signWith(KEY)
+                .compact();
+    }
+
     public boolean isBearer(String token) {
         if (token == null) {
             return  false;

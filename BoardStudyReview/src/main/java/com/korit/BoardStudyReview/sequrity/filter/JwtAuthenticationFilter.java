@@ -20,31 +20,38 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
-public class JwtAuthenticationFilter implements Filter { // jakarta 필터
+public class JwtAuthenticationFilter implements Filter {
 
     @Autowired
     private JwtUtils jwtUtils;
+
     @Autowired
     private UserRepository userRepository;
 
-    @Override // 메서드 구현 doFilter 불러오기
+    @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
+        String requestUri = request.getRequestURI();
+        if (requestUri.startsWith("/oauth2/authorization/") || requestUri.startsWith("/login/oauth2/code/")) {
+            filterChain.doFilter(servletRequest, servletResponse);
+            return;
+        }
         List<String> methods = List.of("POST", "GET", "PUT", "PATCH", "DELETE");
-        if (!methods.contains(request.getMethod())) { // methods 가 포함하고있지 않으면
+        if (!methods.contains(request.getMethod())) {
             filterChain.doFilter(servletRequest, servletResponse);
             return;
         }
 
         String authorization = request.getHeader("Authorization");
-        if (jwtUtils.isBearer(authorization)) { // 만약 http header 값으로 authorization 문자열이 들어왔는데, Bearer 토큰 이면
+        System.out.println(authorization);
+        if (jwtUtils.isBearer(authorization)) {
             String accessToken = jwtUtils.removeBearer(authorization);
-            // 앞에 bearer접두사 제거하고 토큰만 들고오게끔 만듦
+
             try {
                 Claims claims = jwtUtils.getClaims(accessToken);
-                String id = claims.getId(); // 넣어놓은 id를
-                Integer userId = Integer.parseInt(id); // Integer 형태로 바꿔줌
-                Optional<User> optionalUser = userRepository.getUserByUserId(userId); // userid로 찾으려고
+                String id = claims.getId();
+                Integer userId = Integer.parseInt(id);
+                Optional<User> optionalUser = userRepository.getUserByUserId(userId);
                 optionalUser.ifPresentOrElse((user) -> {
                     PrincipalUser principalUser = PrincipalUser.builder()
                             .userId(user.getUserId())
@@ -54,8 +61,9 @@ public class JwtAuthenticationFilter implements Filter { // jakarta 필터
                             .userRoles(user.getUserRoles())
                             .build();
 
-                    Authentication authentication = new UsernamePasswordAuthenticationToken(principalUser,"",principalUser.getAuthorities());
+                    Authentication authentication = new UsernamePasswordAuthenticationToken(principalUser, "", principalUser.getAuthorities());
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+
                 }, () -> {
                     throw new AuthenticationServiceException("인증 실패");
                 });
@@ -63,6 +71,7 @@ public class JwtAuthenticationFilter implements Filter { // jakarta 필터
                 e.printStackTrace();
             }
         }
-        filterChain.doFilter(servletRequest, servletResponse); // 다음 필터로 넘어가라
+
+        filterChain.doFilter(servletRequest, servletResponse);
     }
 }

@@ -62,7 +62,7 @@ public class SecurityConfig {
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         // UsernamePasswordAuthnticationFilter 앞에 직접 커스텀한 필터 끼워넣음
         http.authorizeHttpRequests(auth -> {
-            auth.requestMatchers("/auth/**","/oauth2/**","/login/oauth2/**").permitAll(); // requestMatchers 는 인증없이 넘어감
+            auth.requestMatchers("/auth/**","/oauth2/**","/login/oauth2/**", "/mail/verify").permitAll(); // requestMatchers 는 인증없이 넘어감
             auth.anyRequest().authenticated(); // 나머지 request는 전부 인증 거쳐야함
         });
 
